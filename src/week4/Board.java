@@ -1,4 +1,4 @@
-//package week4;
+ package week4;
 
 import edu.princeton.cs.algs4.StdRandom;
 
@@ -10,10 +10,11 @@ public class Board {
     private final int[][] goal;
     private final int zeroX;
     private final int zeroY;
+    private final int manhattan;
+    private final int hamming;
 
     public Board(int[][] blocks)           // construct a board from an n-by-n array of blocks
     {
-//        sdadas();
         int dim = blocks.length;
         int[] oneDimBoard = new int[dim * dim];
         int zeroInOneDim = 0;
@@ -41,24 +42,23 @@ public class Board {
             }
 
         }
+
+        hamming = countHamming();
+        manhattan = countManhattan();
     }
 
 
-    // (where blocks[i][j] = block in row i, column j)
     public int dimension()                 // board dimension n
     {
-//        sdadas();
         return board.length;
     }
 
-//    private void sdadas() {
-//        long c = Counter.getInstance().getC();
-//        Counter.getInstance().setC(c + 1);
-//    }
-
     public int hamming()                   // number of blocks out of place
     {
-//        sdadas();
+        return hamming;
+    }
+
+    private int countHamming() {
         int h = 0;
         for (int i = 0; i < dimension(); i++)
             for (int j = 0; j < dimension(); j++)
@@ -69,7 +69,10 @@ public class Board {
 
     public int manhattan()                 // sum of Manhattan distances between blocks and goal
     {
-//        sdadas();
+        return manhattan;
+    }
+
+    private int countManhattan() {
         int position;
         int m = 0;
         for (int i = 0; i < dimension(); i++) {
@@ -88,14 +91,11 @@ public class Board {
 
     public boolean isGoal()                // is this board the goal board?
     {
-//        sdadas();
         return Arrays.deepEquals(board, goal);
     }
 
     public Board twin()                    // a board that is obtained by exchanging any pair of blocks
     {
-//        sdadas();
-        int d = dimension();
         int x1 = StdRandom.uniform(0, dimension());
         int y1 = StdRandom.uniform(0, dimension());
         int x2 = StdRandom.uniform(0, dimension());
@@ -113,16 +113,11 @@ public class Board {
 
     public boolean equals(Object y)        // does this board equal y?
     {
-
-        if (!(y instanceof Board))
-            return false;
-        return Arrays.deepEquals(((Board) y).board, this.board);
-//        return ((Board) y).hamming() == this.hamming() && ((Board) y).manhattan() == this.manhattan();
+        return (y != null) && (y.getClass() == this.getClass()) && (Arrays.deepEquals(((Board) y).board, this.board));
     }
 
     public Iterable<Board> neighbors()     // all neighboring boards
     {
-//        sdadas();
         ArrayList<Board> nb = new ArrayList<>();
         int right = zeroX + 1;
         int left = zeroX - 1;
@@ -131,24 +126,30 @@ public class Board {
         if (right < dimension()) {
             int[][] newBoard = getBoardCopy();
             swapInTheBoard(newBoard, zeroX, zeroY, right, zeroY);
-            nb.add(new Board(newBoard));
+            addNeighbour(nb, newBoard);
         }
         if (left >= 0) {
             int[][] newBoard = getBoardCopy();
             swapInTheBoard(newBoard, zeroX, zeroY, left, zeroY);
-            nb.add(new Board(newBoard));
+            addNeighbour(nb, newBoard);
         }
         if (up >= 0) {
             int[][] newBoard = getBoardCopy();
             swapInTheBoard(newBoard, zeroX, zeroY, zeroX, up);
-            nb.add(new Board(newBoard));
+            addNeighbour(nb, newBoard);
         }
         if (down < dimension()) {
             int[][] newBoard = getBoardCopy();
             swapInTheBoard(newBoard, zeroX, zeroY, zeroX, down);
-            nb.add(new Board(newBoard));
+            addNeighbour(nb, newBoard);
         }
         return nb;
+    }
+
+    private void addNeighbour(ArrayList<Board> nb, int[][] newBoard) {
+        Board newNeighbour = new Board(newBoard);
+//        newNeighbour.movesDoneSoFar = this.movesDoneSoFar + 1;
+        nb.add(newNeighbour);
     }
 
     private int[][] getBoardCopy() {
@@ -172,53 +173,27 @@ public class Board {
         return s.toString();
     }
 
-//    class BoardComp implements Comparator<Board> {
-//
-//        @Override
-//        public int compare(Board o1, Board o2) {
-//            if (o1.equals(o2))
-//                return 0;
-//            if ((o1.manhattan() + o1.hamming()) > (o2.manhattan() + o2.hamming()))
-//                return 1;
-//            else
-//                return -1;
-//        }
-//    }
-
-    private void swapInTheBoard(int[][] board, int X1, int Y1, int X2, int Y2) {
-        int temp = board[Y1][X1];
-        board[Y1][X1] = board[Y2][X2];
-        board[Y2][X2] = temp;
+    private void swapInTheBoard(int[][] boardToSwapIn, int x1, int y1, int x2, int y2) {
+        int temp = boardToSwapIn[y1][x1];
+        boardToSwapIn[y1][x1] = boardToSwapIn[y2][x2];
+        boardToSwapIn[y2][x2] = temp;
     }
 
 
     public static void main(String[] args) // unit tests (not graded)
     {
-        int n = 3;
-        int rand;
-        int[][] blocks = new int[n][n];
-        ArrayList<Integer> duplicates = new ArrayList<>();
-        for (int i = 0; i < n; i++)
-            for (int j = 0; j < n; j++) {
-//                if (j != n - 1 || i != n - 2) {
-                rand = StdRandom.uniform(1, 9);
-                while (duplicates.contains(rand))
-                    rand = StdRandom.uniform(0, 9);
-                blocks[i][j] = rand;
-                duplicates.add(rand);
-//                } else
-//                    blocks[i][j] = 0;
-            }
-        Board initial = new Board(blocks);
+//        int n = 3;
+//        int rand;
+//        int[][] blocks = new int[n][n];
+//        ArrayList<Integer> duplicates = new ArrayList<>();
+//        for (int i = 0; i < n; i++)
+//            for (int j = 0; j < n; j++) {
+//                rand = StdRandom.uniform(1, 9);
+//                while (duplicates.contains(rand))
+//                    rand = StdRandom.uniform(0, 9);
+//                blocks[i][j] = rand;
+//                duplicates.add(rand);
+//            }
 
-//        System.out.println(Arrays.deepToString(initial.getGoal()));
-//        System.out.println(Arrays.deepToString(initial.getBoard()));
-//
-//        System.out.println(initial.toString());
-//
-//        System.out.println("hamming " + initial.hamming());
-//
-//        System.out.println("manhattan " + initial.manhattan());
-//        Iterable<Board> test = initial.neighbors();
     }
 }

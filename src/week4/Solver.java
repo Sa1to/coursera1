@@ -1,36 +1,37 @@
-//package week4;
+ package week4;
 
 import edu.princeton.cs.algs4.MinPQ;
 
 import java.util.*;
 
 public class Solver {
-    private final MinPQ<Map.Entry<Board, Board>> pq;
+
     private final ArrayList<Map.Entry<Board, Board>> results;
     private final ArrayList<Board> solution;
-    private final Board initial;
+    private Board initial;
     private boolean solvable;
 
     public Solver(Board initial) {
         solution = new ArrayList<>();
-        pq = new MinPQ<>(new BoardComp());
         results = new ArrayList<>();
         this.initial = initial;
         this.solvable = false;
     }           // find a solution to the initial board (using the A* algorithm)
 
     public boolean isSolvable() {
+        MinPQ<Map.Entry<Map.Entry<Board, Integer>, Board>> pq = new MinPQ<>(new BoardComp());
+
         if (results.isEmpty()) {
             Board board = initial;
-            ArrayList<Map.Entry<Board, Board>> used = new ArrayList<>();
-            ArrayList<Map.Entry<Board, Board>> usedTwin = new ArrayList<>();
+            ArrayList<Map.Entry<Map.Entry<Board, Integer>, Board>> used = new ArrayList<>();
+            ArrayList<Map.Entry<Map.Entry<Board, Integer>, Board>> usedTwin = new ArrayList<>();
 
             results.add(new AbstractMap.SimpleEntry<>(null, board));
-            Map.Entry<Board, Board> entryBoard = null;
+            Map.Entry<Map.Entry<Board, Integer>, Board> entryBoard = null;
 
-            MinPQ<Map.Entry<Board, Board>> pqTwin = new MinPQ<>(new BoardComp());
+            MinPQ<Map.Entry<Map.Entry<Board, Integer>, Board>> pqTwin = new MinPQ<>(new BoardComp());
             Board twin = board.twin();
-            Map.Entry<Board, Board> twinEntryBoard = null;
+            Map.Entry<Map.Entry<Board, Integer>, Board> twinEntryBoard = null;
 
             while (!board.isGoal() && !twin.isGoal()) {
                 Iterable<Board> neighbors = board.neighbors();
@@ -45,7 +46,9 @@ public class Solver {
                 twinEntryBoard = pqTwin.delMin();
                 twin = twinEntryBoard.getValue();
 
-                results.add(entryBoard);
+                Map.Entry<Board, Board> entryToResults = new AbstractMap.SimpleEntry<>
+                        (entryBoard.getKey().getKey(), entryBoard.getValue());
+                results.add(entryToResults);
 
             }
             if (board.isGoal())
@@ -54,11 +57,23 @@ public class Solver {
         return solvable;
     }        // is the initial board solvable?
 
-    private void addNeighbors(ArrayList<Map.Entry<Board, Board>> used, MinPQ<Map.Entry<Board, Board>> pq, Board board, Map.Entry<Board, Board> entryBoard, Iterable<Board> neighbors) {
+    private void addNeighbors(Collection<Map.Entry<Map.Entry<Board, Integer>, Board>> used,
+                              MinPQ<Map.Entry<Map.Entry<Board, Integer>, Board>> queue,
+                              Board board,
+                              Map.Entry<Map.Entry<Board, Integer>, Board> entryBoard,
+                              Iterable<Board> neighbors) {
         for (Board n : neighbors) {
-            Map.Entry<Board, Board> e = new AbstractMap.SimpleEntry<>(board, n);
+            Map.Entry<Map.Entry<Board, Integer>, Board> e;
+            if (entryBoard != null) {
+                Map.Entry<Board, Integer> key = new AbstractMap.SimpleEntry<>(board, entryBoard.getKey().getValue() + 1);
+
+                e = new AbstractMap.SimpleEntry<>(key, n);
+            } else {
+                Map.Entry<Board, Integer> key = new AbstractMap.SimpleEntry<>(board, 0);
+                e = new AbstractMap.SimpleEntry<>(key, n);
+            }
             if (entryBoard == null || (!n.equals(entryBoard.getKey()) && !used.contains(e))) {
-                pq.insert(e);
+                queue.insert(e);
                 used.add(e);
             }
         }
@@ -93,29 +108,33 @@ public class Solver {
         return solution;
     }      // sequence of boards in a shortest solution; null if unsolvable
 
-    private void solve(Board board) throws InterruptedException {
-        boolean solvable = isSolvable();
-        if (solvable) {
+    private void solve(Board board) {
+        initial = board;
+        if (isSolvable()) {
             solution();
             System.out.println("Minimum number of moves = " + moves());
             for (Board b : solution)
                 System.out.println(b);
         } else
             System.out.println("No solution possible");
-//        System.out.println("NUMBER " + (solution.size() -1));
     }
 
-    private class BoardComp implements Comparator<Map.Entry<Board, Board>> {
+    private static class BoardComp implements Comparator<Map.Entry<Map.Entry<Board, Integer>, Board>> {
 
 
         @Override
-        public int compare(Map.Entry<Board, Board> m1, Map.Entry<Board, Board> m2) {
+        public int compare(Map.Entry<Map.Entry<Board, Integer>, Board> m1, Map.Entry<Map.Entry<Board, Integer>, Board> m2) {
+            if (m1.equals(m2))
+                return 0;
+
             Board o1 = m1.getValue();
             Board o2 = m2.getValue();
 
             if (o1.equals(o2))
                 return 0;
-            if ((o1.manhattan() + o1.hamming()) > (o2.manhattan() + o2.hamming()))
+            if ((o1.manhattan() + m1.getKey().getValue() + o1.hamming() + m1.getKey().getValue())
+                    >
+                    (o2.manhattan() + m2.getKey().getValue() + o2.hamming() + m2.getKey().getValue()))
                 return 1;
             else
                 return -1;
@@ -123,29 +142,33 @@ public class Solver {
     }
 
 
-    public static void main(String[] args) throws InterruptedException {
-        int n = 3;
-        int rand;
-        int[][] blocks =
-                {{1, 2, 3, 4, 5, 6, 7, 8, 9},
-                        {10, 11, 12, 13, 14, 15, 16, 17, 18},
-                        {19, 20, 21, 22, 23, 24, 25, 26, 27},
-                        {28, 29, 30, 31, 32, 33, 34, 35, 36},
-                        {37, 38, 39, 40, 41, 42, 43, 44, 45},
-                        {46, 47, 48, 49, 50, 51, 52, 53, 54},
-                        {55, 56, 57, 58, 59, 60, 61, 62, 63},
-                        {64, 0, 65, 67, 68, 78, 69, 70, 72},
-                        {73, 74, 66, 75, 76, 77, 79, 71, 80}};
+    public static void main(String[] args) {
+//        int n = 3;
+//        int rand;
+//        int[][] blocks =
+//                {{1, 2, 3, 4, 5, 6, 7, 8, 9},
+//                        {10, 11, 12, 13, 14, 15, 16, 17, 18},
+//                        {19, 20, 21, 22, 23, 24, 25, 26, 27},
+//                        {28, 29, 30, 31, 32, 33, 34, 35, 36},
+//                        {37, 38, 39, 40, 41, 42, 43, 44, 45},
+//                        {46, 47, 48, 49, 50, 51, 52, 53, 54},
+//                        {55, 56, 57, 58, 59, 60, 61, 62, 63},
+//                        {64, 0, 65, 67, 68, 78, 69, 70, 72},
+//                        {73, 74, 66, 75, 76, 77, 79, 71, 80}};
 //        int[][] blocks =
 //                {{2, 3, 4, 8},
 //                        {1, 6, 0, 12},
 //                        {5, 10, 7, 11},
 //                        {9, 13, 14, 15}
 //                };
+        int[][] blocks =
+                {{5, 1, 8},
+                        {2, 7, 3},
+                        {4, 0, 6}
+                };
 //        int[][] blocks =
 //                {{1, 0},
 //                        {3, 2}};
-        ArrayList<Integer> duplicates = new ArrayList<>();
 //        for (int i = 0; i < n; i++)
 //            for (int j = 0; j < n; j++) {
 ////                if (j != n - 1 || i != n - 2) {
@@ -163,6 +186,7 @@ public class Solver {
         System.out.println(initial);
         Solver solver = new Solver(initial);
         solver.solve(initial);
+        System.out.println(solver.moves());
 //        System.out.println(Counter.getInstance().getC());
     } // solve a slider puzzle (given below)
 }
