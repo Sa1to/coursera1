@@ -1,11 +1,12 @@
  package week4;
 
+import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.MinPQ;
+import edu.princeton.cs.algs4.StdOut;
 
 import java.util.*;
 
 public class Solver {
-
     private final ArrayList<Map.Entry<Board, Board>> results;
     private final ArrayList<Board> solution;
     private Board initial;
@@ -23,15 +24,19 @@ public class Solver {
 
         if (results.isEmpty()) {
             Board board = initial;
-            ArrayList<Map.Entry<Map.Entry<Board, Integer>, Board>> used = new ArrayList<>();
-            ArrayList<Map.Entry<Map.Entry<Board, Integer>, Board>> usedTwin = new ArrayList<>();
+            List<Board> used = new ArrayList<>();
+            List<Board> usedTwin = new ArrayList<>();
 
-            results.add(new AbstractMap.SimpleEntry<>(null, board));
-            Map.Entry<Map.Entry<Board, Integer>, Board> entryBoard = null;
+            Map.Entry<Map.Entry<Board, Integer>, Board> entryBoard =
+                    new AbstractMap.SimpleEntry<>(new AbstractMap.SimpleEntry<Board, Integer>(null, 0), board);
 
             MinPQ<Map.Entry<Map.Entry<Board, Integer>, Board>> pqTwin = new MinPQ<>(new BoardComp());
             Board twin = board.twin();
-            Map.Entry<Map.Entry<Board, Integer>, Board> twinEntryBoard = null;
+            Map.Entry<Map.Entry<Board, Integer>, Board> twinEntryBoard =
+                    new AbstractMap.SimpleEntry<>(new AbstractMap.SimpleEntry<Board, Integer>(null, 0), twin);
+
+            AbstractMap.SimpleEntry<Board, Board> initialBoardEntrySimplified = new AbstractMap.SimpleEntry<>(null, board);
+            results.add(initialBoardEntrySimplified);
 
             while (!board.isGoal() && !twin.isGoal()) {
                 Iterable<Board> neighbors = board.neighbors();
@@ -46,8 +51,8 @@ public class Solver {
                 twinEntryBoard = pqTwin.delMin();
                 twin = twinEntryBoard.getValue();
 
-                Map.Entry<Board, Board> entryToResults = new AbstractMap.SimpleEntry<>
-                        (entryBoard.getKey().getKey(), entryBoard.getValue());
+                Map.Entry<Board, Board> entryToResults =
+                        new AbstractMap.SimpleEntry<>(entryBoard.getKey().getKey(), entryBoard.getValue());
                 results.add(entryToResults);
 
             }
@@ -57,40 +62,36 @@ public class Solver {
         return solvable;
     }        // is the initial board solvable?
 
-    private void addNeighbors(Collection<Map.Entry<Map.Entry<Board, Integer>, Board>> used,
+    private void addNeighbors(Collection<Board> used,
                               MinPQ<Map.Entry<Map.Entry<Board, Integer>, Board>> queue,
                               Board board,
                               Map.Entry<Map.Entry<Board, Integer>, Board> entryBoard,
                               Iterable<Board> neighbors) {
         for (Board n : neighbors) {
-            Map.Entry<Map.Entry<Board, Integer>, Board> e;
-            if (entryBoard != null) {
-                Map.Entry<Board, Integer> key = new AbstractMap.SimpleEntry<>(board, entryBoard.getKey().getValue() + 1);
-
-                e = new AbstractMap.SimpleEntry<>(key, n);
-            } else {
-                Map.Entry<Board, Integer> key = new AbstractMap.SimpleEntry<>(board, 0);
-                e = new AbstractMap.SimpleEntry<>(key, n);
-            }
-            if (entryBoard == null || (!n.equals(entryBoard.getKey()) && !used.contains(e))) {
+            Map.Entry<Board, Integer> key = new AbstractMap.SimpleEntry<>(board, entryBoard.getKey().getValue() + 1);
+            Map.Entry<Map.Entry<Board, Integer>, Board> e = new AbstractMap.SimpleEntry<>(key, n);
+            if (entryBoard.getKey().getKey() == null || !n.equals(entryBoard.getKey().getKey()) && !used.contains(e.getValue())) {
                 queue.insert(e);
-                used.add(e);
+                used.add(e.getValue());
             }
         }
     }
 
     public int moves() {
-        if (solution.isEmpty())
+        if (solution.isEmpty()) {
             solution();
-        if (isSolvable())
+        }
+        if (isSolvable()) {
             return solution.size() - 1;
-        else
+        } else
             return -1;
     }                     // min number of moves to solve initial board; -1 if unsolvable
 
     public Iterable<Board> solution() {
-        if (results.isEmpty())
-            isSolvable();
+
+        if (results.isEmpty() && !isSolvable()) {
+            return null;
+        }
         int lastInChain = results.size() - 1;
         for (int i = results.size() - 1; i >= 0; i--) {
             if (i == 0)
@@ -111,10 +112,13 @@ public class Solver {
     private void solve(Board board) {
         initial = board;
         if (isSolvable()) {
-            solution();
+            if (solution.isEmpty()) {
+                solution();
+            }
             System.out.println("Minimum number of moves = " + moves());
-            for (Board b : solution)
+            for (Board b : solution) {
                 System.out.println(b);
+            }
         } else
             System.out.println("No solution possible");
     }
@@ -141,52 +145,70 @@ public class Solver {
         }
     }
 
-
     public static void main(String[] args) {
-//        int n = 3;
-//        int rand;
+
+        // for each command-line argument
+        for (String filename : args) {
+
+            // read in the board specified in the filename
+            In in = new In(filename);
+            int n = in.readInt();
+            int[][] tiles = new int[n][n];
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) {
+                    tiles[i][j] = in.readInt();
+                }
+            }
+
+            // solve the slider puzzle
+            Board initial = new Board(tiles);
+            Solver solver = new Solver(initial);
+            solver.solve(initial);
+            StdOut.println(filename + ": " + solver.moves());
+        }
+    }
+//    public static void main(int[][] args) {
+////        int n = 3;
+////        int rand;
+////        int[][] blocks =
+////                {{1, 2, 3, 4, 5, 6, 7, 8, 9},
+////                        {10, 11, 12, 13, 14, 15, 16, 17, 18},
+////                        {19, 20, 21, 22, 23, 24, 25, 26, 27},
+////                        {28, 29, 30, 31, 32, 33, 34, 35, 36},
+////                        {37, 38, 39, 40, 41, 42, 43, 44, 45},
+////                        {46, 47, 48, 49, 50, 51, 52, 53, 54},
+////                        {55, 56, 57, 58, 59, 60, 61, 62, 63},
+////                        {64, 0, 65, 67, 68, 78, 69, 70, 72},
+////                        {73, 74, 66, 75, 76, 77, 79, 71, 80}};
+////        int[][] blocks =
+////                {{2, 3, 4, 8},
+////                        {1, 6, 0, 12},
+////                        {5, 10, 7, 11},
+////                        {9, 13, 14, 15}
+////                };
 //        int[][] blocks =
-//                {{1, 2, 3, 4, 5, 6, 7, 8, 9},
-//                        {10, 11, 12, 13, 14, 15, 16, 17, 18},
-//                        {19, 20, 21, 22, 23, 24, 25, 26, 27},
-//                        {28, 29, 30, 31, 32, 33, 34, 35, 36},
-//                        {37, 38, 39, 40, 41, 42, 43, 44, 45},
-//                        {46, 47, 48, 49, 50, 51, 52, 53, 54},
-//                        {55, 56, 57, 58, 59, 60, 61, 62, 63},
-//                        {64, 0, 65, 67, 68, 78, 69, 70, 72},
-//                        {73, 74, 66, 75, 76, 77, 79, 71, 80}};
-//        int[][] blocks =
-//                {{2, 3, 4, 8},
-//                        {1, 6, 0, 12},
-//                        {5, 10, 7, 11},
-//                        {9, 13, 14, 15}
+//                {{5, 2, 3},
+//                        {4, 7, 0},
+//                        {8, 6, 1}
 //                };
-        int[][] blocks =
-                {{5, 1, 8},
-                        {2, 7, 3},
-                        {4, 0, 6}
-                };
-//        int[][] blocks =
-//                {{1, 0},
-//                        {3, 2}};
-//        for (int i = 0; i < n; i++)
-//            for (int j = 0; j < n; j++) {
-////                if (j != n - 1 || i != n - 2) {
-//                rand = StdRandom.uniform(1, 9);
-//                while (duplicates.contains(rand))
-//                    rand = StdRandom.uniform(0, 9);
-//                blocks[i][j] = rand;
-//                duplicates.add(rand);
-////                } else
-////                    blocks[i][j] = 0;
-//            }
-
-
-        Board initial = new Board(blocks);
-        System.out.println(initial);
-        Solver solver = new Solver(initial);
-        solver.solve(initial);
-        System.out.println(solver.moves());
-//        System.out.println(Counter.getInstance().getC());
-    } // solve a slider puzzle (given below)
+////        int[][] blocks =
+////                {{1, 0},
+////                        {3, 2}};
+////        for (int i = 0; i < n; i++)
+////            for (int j = 0; j < n; j++) {
+//////                if (j != n - 1 || i != n - 2) {
+////                rand = StdRandom.uniform(1, 9);
+////                while (duplicates.contains(rand))
+////                    rand = StdRandom.uniform(0, 9);
+////                blocks[i][j] = rand;
+////                duplicates.add(rand);
+//////                } else
+//////                    blocks[i][j] = 0;
+////            }
+//        Board initial = new Board(blocks);
+//        System.out.println(initial);
+//        Solver solver = new Solver(initial);
+//        solver.solve(initial);
+//        System.out.println(solver.moves());
+//    } // solve a slider puzzle (given below)
 }

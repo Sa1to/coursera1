@@ -12,10 +12,11 @@ public class Board {
     private final int zeroY;
     private final int manhattan;
     private final int hamming;
+    private final int dim;
 
     public Board(int[][] blocks)           // construct a board from an n-by-n array of blocks
     {
-        int dim = blocks.length;
+        dim = blocks.length;
         int[] oneDimBoard = new int[dim * dim];
         int zeroInOneDim = 0;
         for (int i = 0; i < dim; i++)
@@ -50,7 +51,7 @@ public class Board {
 
     public int dimension()                 // board dimension n
     {
-        return board.length;
+        return dim;
     }
 
     public int hamming()                   // number of blocks out of place
@@ -60,8 +61,8 @@ public class Board {
 
     private int countHamming() {
         int h = 0;
-        for (int i = 0; i < dimension(); i++)
-            for (int j = 0; j < dimension(); j++)
+        for (int i = 0; i < dim; i++)
+            for (int j = 0; j < dim; j++)
                 if (board[i][j] != goal[i][j] && board[i][j] != 0)
                     h++;
         return h;
@@ -75,9 +76,9 @@ public class Board {
     private int countManhattan() {
         int position;
         int m = 0;
-        for (int i = 0; i < dimension(); i++) {
-            for (int j = 0; j < dimension(); j++)
-                for (int k = 0; k < dimension(); k++) {
+        for (int i = 0; i < dim; i++) {
+            for (int j = 0; j < dim; j++)
+                for (int k = 0; k < dim; k++) {
                     position = Arrays.binarySearch(goal[k], board[i][j]);
                     if (position >= 0) {
                         m = m + (Math.abs(i - k) + Math.abs(j - position));
@@ -96,15 +97,15 @@ public class Board {
 
     public Board twin()                    // a board that is obtained by exchanging any pair of blocks
     {
-        int x1 = StdRandom.uniform(0, dimension());
-        int y1 = StdRandom.uniform(0, dimension());
-        int x2 = StdRandom.uniform(0, dimension());
-        int y2 = StdRandom.uniform(0, dimension());
+        int x1 = StdRandom.uniform(0, dim);
+        int y1 = StdRandom.uniform(0, dim);
+        int x2 = StdRandom.uniform(0, dim);
+        int y2 = StdRandom.uniform(0, dim);
         while ((x1 == zeroX && y1 == zeroY) || (x2 == zeroX && y2 == zeroY) || (x1 == x2 && y1 == y2)) {
-            x1 = StdRandom.uniform(0, dimension());
-            y1 = StdRandom.uniform(0, dimension());
-            x2 = StdRandom.uniform(0, dimension());
-            y2 = StdRandom.uniform(0, dimension());
+            x1 = StdRandom.uniform(0, dim);
+            y1 = StdRandom.uniform(0, dim);
+            x2 = StdRandom.uniform(0, dim);
+            y2 = StdRandom.uniform(0, dim);
         }
         int[][] newBoard = getBoardCopy();
         swapInTheBoard(newBoard, x1, y1, x2, y2);
@@ -123,7 +124,7 @@ public class Board {
         int left = zeroX - 1;
         int up = zeroY - 1;
         int down = zeroY + 1;
-        if (right < dimension()) {
+        if (right < dim) {
             int[][] newBoard = getBoardCopy();
             swapInTheBoard(newBoard, zeroX, zeroY, right, zeroY);
             addNeighbour(nb, newBoard);
@@ -138,7 +139,7 @@ public class Board {
             swapInTheBoard(newBoard, zeroX, zeroY, zeroX, up);
             addNeighbour(nb, newBoard);
         }
-        if (down < dimension()) {
+        if (down < dim) {
             int[][] newBoard = getBoardCopy();
             swapInTheBoard(newBoard, zeroX, zeroY, zeroX, down);
             addNeighbour(nb, newBoard);
@@ -163,9 +164,9 @@ public class Board {
     public String toString()               // string representation of this board (in the output format specified below)
     {
         StringBuilder s = new StringBuilder();
-        s.append(dimension() + "\n");
-        for (int i = 0; i < dimension(); i++) {
-            for (int j = 0; j < dimension(); j++) {
+        s.append(dim + "\n");
+        for (int i = 0; i < dim; i++) {
+            for (int j = 0; j < dim; j++) {
                 s.append(String.format("%2d ", board[i][j]));
             }
             s.append("\n");
